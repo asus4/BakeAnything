@@ -1,0 +1,21 @@
+{
+    "name": "BakeAnything.Tests",
+    "rootNamespace": "BakeAnything.Tests",
+    "references": [
+        "GUID:d19ef8e438f404a64bc2b1a0d66d8d66",
+        "GUID:f4425d0eb315d40c7b43ae08fdecc53f"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,5 +1,20 @@
 {
   "dependencies": {
+    "com.github.asus4.bake-anything": {
+      "version": "file:com.github.asus4.bake-anything",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.modules.animation": "1.0.0",
+        "com.unity.modules.audio": "1.0.0",
+        "com.unity.modules.director": "1.0.0",
+        "com.unity.modules.imageconversion": "1.0.0",
+        "com.unity.modules.particlesystem": "1.0.0",
+        "com.unity.modules.uielements": "1.0.0",
+        "com.unity.test-framework": "2.0.1-exp.2",
+        "com.unity.visualeffectgraph": "14.0.10"
+      }
+    },
     "com.unity.burst": {
       "version": "1.8.13",
       "depth": 1,
@@ -11,8 +26,8 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ext.nunit": {
-      "version": "1.0.6",
-      "depth": 1,
+      "version": "2.0.3",
+      "depth": 2,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
@@ -81,11 +96,11 @@
       }
     },
     "com.unity.test-framework": {
-      "version": "1.1.33",
-      "depth": 0,
+      "version": "2.0.1-exp.2",
+      "depth": 1,
       "source": "registry",
       "dependencies": {
-        "com.unity.ext.nunit": "1.0.6",
+        "com.unity.ext.nunit": "2.0.3",
         "com.unity.modules.imgui": "1.0.0",
         "com.unity.modules.jsonserialize": "1.0.0"
       },
@@ -120,6 +135,24 @@
         "com.unity.modules.ui": "1.0.0",
         "com.unity.modules.imgui": "1.0.0"
       }
+    },
+    "com.unity.visualeffectgraph": {
+      "version": "14.0.10",
+      "depth": 0,
+      "source": "builtin",
+      "dependencies": {
+        "com.unity.shadergraph": "14.0.10",
+        "com.unity.render-pipelines.core": "14.0.10"
+      }
+    },
+    "jp.keijiro.klak.timeline.midi": {
+      "version": "1.0.6",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.timeline": "1.1.0"
+      },
+      "url": "https://registry.npmjs.com"
     },
     "com.unity.modules.animation": {
       "version": "1.0.0",
