@@ -5,8 +5,6 @@ https://github.com/keijiro/MidiAnimationTrack/blob/master/LICENSE
 */
 
 using System;
-using System.Runtime.InteropServices;
-using System.Text;
 
 namespace BakeAnything.Midi
 {
@@ -16,7 +14,6 @@ namespace BakeAnything.Midi
         #region Internal members
 
         readonly byte[] _data;
-        readonly StringBuilder _stringBuilder;
 
         #endregion
 
@@ -25,7 +22,6 @@ namespace BakeAnything.Midi
         public MidiDataStreamReader(byte[] data)
         {
             _data = data;
-            _stringBuilder = new StringBuilder();
         }
 
         #endregion

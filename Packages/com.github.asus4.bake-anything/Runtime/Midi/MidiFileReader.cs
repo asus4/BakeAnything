@@ -105,14 +105,14 @@ namespace BakeAnything.Midi
                         break;
                     // MIDI event
                     default:
-                        byte b1 = reader.ReadByte();
-                        byte b2 = (status & 0xe0u) == 0xc0u ? (byte)0 : reader.ReadByte();
+                        byte data1 = reader.ReadByte();
+                        byte data2 = (status & 0xe0u) == 0xc0u ? (byte)0 : reader.ReadByte();
                         events.Add(new MidiEvent
                         {
                             Time = ticks,
                             Status = status,
-                            Data1 = b1,
-                            Data2 = b2,
+                            Data1 = data1,
+                            Data2 = data2,
                         });
                         break;
                 }
