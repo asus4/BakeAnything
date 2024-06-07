@@ -6,6 +6,10 @@ namespace BakeAnything.Midi
 {
     /// <summary>
     /// SMF (Standard MIDI File) reader.
+    /// Originally developed by Keijiro Takahashi (Unlicense)
+    /// https://github.com/keijiro/MidiAnimationTrack/blob/master/LICENSE
+    ///
+    /// References for SMF:
     /// https://www.ccarh.org/courses/253/handout/smf/
     /// http://midi.teragonaudio.com/tech/midifile.htm
     /// </summary>
@@ -55,6 +59,7 @@ namespace BakeAnything.Midi
             return new MidiFile
             {
                 Format = format,
+                TicksPerQuarterNote = tpqn,
                 Tracks = Array.AsReadOnly(track),
             };
         }
@@ -128,7 +133,7 @@ namespace BakeAnything.Midi
             }
 
             // Quantize duration with bars.
-            var bars = (ticks + tpqn * 4 - 1) / (tpqn * 4);
+            uint bars = (ticks + tpqn * 4 - 1) / (tpqn * 4);
 
             return new MidiTrack()
             {

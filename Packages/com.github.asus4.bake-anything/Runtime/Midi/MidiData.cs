@@ -14,6 +14,7 @@ namespace BakeAnything.Midi
     public class MidiFile
     {
         public MidiFileFormat Format { get; internal set; }
+        public uint TicksPerQuarterNote { get; internal set; }
         public ReadOnlyCollection<MidiTrack> Tracks { get; internal set; }
 
         public MidiFile() { }
@@ -91,6 +92,7 @@ namespace BakeAnything.Midi
         {
             return EventType switch
             {
+                // Text
                 MetaEventType.TextEvent
                 or MetaEventType.CopyrightNotice
                 or MetaEventType.SequenceOrTrackName
@@ -98,6 +100,7 @@ namespace BakeAnything.Midi
                 or MetaEventType.LyricText
                 or MetaEventType.MarkerText
                     => $"[{time}: {EventType} {DataAsText}]",
+                // Others
                 MetaEventType.TempoSetting => $"[{time}: {EventType} Tempo={DataAsTempo}]",
                 _ => $"[{time}: {EventType}, {data.Length} bytes]",
             };

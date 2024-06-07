@@ -1,16 +1,26 @@
 using System;
 using System.IO;
 using UnityEngine;
+using UnityEditor;
 
-namespace BakeAnything.Editor
+namespace BakeAnything
 {
     /// <summary>
     /// Core methods to bake anything.
     /// </summary>
-    public static class Baker
+    public static class BakeHelper
     {
-        public static void Bake(string path, ReadOnlySpan<float> data)
+        /// <summary>
+        /// 
+        public static string GetAssetPath(UnityEngine.Object obj)
         {
+            return AssetDatabase.GetAssetPath(obj);
+        }
+
+        public static void Bake(string defaultName, IBakable bakable)
+        {
+            string path = EditorUtility.SaveFilePanel("Bake to Exr", Application.dataPath, defaultName, "exr");
+
             if (!Path.IsPathRooted(path))
             {
                 path = Path.Combine(Application.dataPath, path);

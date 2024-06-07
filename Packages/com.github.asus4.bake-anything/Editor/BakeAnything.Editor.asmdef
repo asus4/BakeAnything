@@ -2,8 +2,7 @@
     "name": "BakeAnything.Editor",
     "rootNamespace": "BakeAnything.Editor",
     "references": [
-        "GUID:f06555f75b070af458a003d92f9efb00",
-        "GUID:02f771204943f4a40949438e873e3eff"
+        "GUID:d19ef8e438f404a64bc2b1a0d66d8d66"
     ],
     "includePlatforms": [
         "Editor"

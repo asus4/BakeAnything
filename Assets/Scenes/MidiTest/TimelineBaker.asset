@@ -12,4 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00b8ebd01bc5e4bee8c7f4d7b779a6ee, type: 3}
   m_Name: TimelineBaker
   m_EditorClassIdentifier: 
-  timeline: {fileID: 11400000, guid: dd65b9770482b4b8a8b2975590ec6c17, type: 2}
+  <FrameRate>k__BackingField: 60
+  <Tracks>k__BackingField:
+  - {fileID: 11400000, guid: 5a337ef5311634b5fa3394118b38099c, type: 2}

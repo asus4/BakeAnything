@@ -1,6 +1,4 @@
 using UnityEngine;
-using UnityEngine.Playables;
-using UnityEngine.Timeline;
 
 namespace BakeAnything
 {
@@ -8,6 +6,9 @@ namespace BakeAnything
     public sealed class TimelineBaker : ScriptableObject
     {
         [field: SerializeField]
-        private TimelineAsset timeline;
+        public int FrameRate { get; private set; } = 60;
+
+        [field: SerializeField]
+        public BakableTrack[] Tracks { get; private set; }
     }
 }
