@@ -7,11 +7,12 @@ namespace BakeAnything.Midi
     /// <summary>
     /// SMF (Standard MIDI File) reader.
     /// https://www.ccarh.org/courses/253/handout/smf/
+    /// http://midi.teragonaudio.com/tech/midifile.htm
     /// </summary>
-    public class MidiFileReader
+    public static class MidiFileReader
     {
-        private static readonly byte[] MThd = Encoding.ASCII.GetBytes("MThd");
-        private static readonly byte[] MTrk = Encoding.ASCII.GetBytes("MTrk");
+        private static byte[] MThd => Encoding.ASCII.GetBytes("MThd");
+        private static byte[] MTrk => Encoding.ASCII.GetBytes("MTrk");
 
         public static MidiFile Read(byte[] data)
         {
@@ -37,7 +38,6 @@ namespace BakeAnything.Midi
 
             // Number of tracks
             uint trackCount = reader.ReadBEUInt16();
-            UnityEngine.Debug.Log($"Track count: {trackCount}");
 
             // Ticks per quarter note
             var tpqn = reader.ReadBEUInt16();
@@ -49,7 +49,6 @@ namespace BakeAnything.Midi
             var track = new MidiTrack[trackCount];
             for (var i = 0; i < trackCount; i++)
             {
-                UnityEngine.Debug.Log($"Reading track: {i}");
                 track[i] = ReadTrack(reader, tpqn);
             }
 
@@ -65,18 +64,16 @@ namespace BakeAnything.Midi
             // Chunk type
             if (!reader.ReadBytes(4).SequenceEqual(MTrk))
             {
-                UnityEngine.Debug.Log("Can't find track chunk.");
                 throw new FormatException("Can't find track chunk.");
             }
 
-            UnityEngine.Debug.Log($"Start reading track: {reader.Position}");
-
             // Chunk length
             uint chunkEnd = reader.ReadBEUInt32();
-            UnityEngine.Debug.Log($"Chunk end: {chunkEnd}");
             chunkEnd += reader.Position;
 
-            var events = new List<MidiEvent>();
+            List<MidiEvent> midiEvents = new();
+            List<MetaEvent> metaEvents = new();
+
             uint ticks = 0u;
             byte status = 0;
 
@@ -93,30 +90,41 @@ namespace BakeAnything.Midi
 
                 switch (status)
                 {
-                    // TODO: Meta event
                     case 0xff:
-                        reader.Advance(1);
-                        reader.Advance(reader.ReadMultiByteValue());
+                        // Meta event
+                        // meta_event = 0xFF + <meta_type> + <v_length> + <event_data_bytes>
+                        {
+                            byte type = reader.ReadByte();
+                            uint length = reader.ReadMultiByteValue();
+                            byte[] data = reader.ReadBytes((int)length).ToArray();
+                            metaEvents.Add(new MetaEvent
+                            {
+                                time = ticks,
+                                type = type,
+                                data = data,
+                            });
+                        }
                         break;
-                    // TODO: SysEx event
                     case 0xf0:
-                        // case 0xf7:
+                    case 0xf7:
+                        // TODO: SysEx event
                         while (reader.ReadByte() != 0xf7) { }
                         break;
-                    // MIDI event
                     default:
-                        byte data1 = reader.ReadByte();
-                        byte data2 = (status & 0xe0u) == 0xc0u ? (byte)0 : reader.ReadByte();
-                        events.Add(new MidiEvent
+                        // MIDI event
                         {
-                            Time = ticks,
-                            Status = status,
-                            Data1 = data1,
-                            Data2 = data2,
-                        });
+                            byte data1 = reader.ReadByte();
+                            byte data2 = (status & 0xe0u) == 0xc0u ? (byte)0 : reader.ReadByte();
+                            midiEvents.Add(new MidiEvent
+                            {
+                                time = ticks,
+                                status = status,
+                                data1 = data1,
+                                data2 = data2,
+                            });
+                        }
                         break;
                 }
-
             }
 
             // Quantize duration with bars.
@@ -124,10 +132,10 @@ namespace BakeAnything.Midi
 
             return new MidiTrack()
             {
-                Tempo = 120,
                 Duration = bars * tpqn * 4,
                 TicksPerQuarterNote = tpqn,
-                Events = events.AsReadOnly(),
+                Events = midiEvents.AsReadOnly(),
+                MetaEvents = metaEvents.AsReadOnly(),
             };
         }
     }

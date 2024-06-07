@@ -16,7 +16,23 @@ namespace BakeAnything.Tests
             var midi = Midi.MidiFileReader.Read(bytes);
             Assert.IsNotNull(midi);
 
-            Debug.Log($"midi: {midi}");
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < midi.Tracks.Count; i++)
+            {
+                var track = midi.Tracks[i];
+                sb.AppendLine($"Track {i}: Duration={track.Duration}");
+                sb.AppendLine($"  Meta events: {track.MetaEvents.Count}");
+                foreach (var e in track.MetaEvents)
+                {
+                    sb.AppendLine($"  {e}");
+                }
+                sb.AppendLine($"  Midi events: {track.Events.Count}");
+                foreach (var e in track.Events)
+                {
+                    sb.AppendLine($"  {e}");
+                }
+            }
+            Debug.Log(sb.ToString());
         }
     }
 }
