@@ -12,12 +12,20 @@ namespace BakeAnything
 
             if (GUILayout.Button("Bake"))
             {
-                var bakable = target as IBakable;
-                if (bakable != null)
-                {
-                    BakeHelper.Bake(target.name, bakable);
-                }
+                Bake();
             }
+        }
+
+        private void Bake()
+        {
+            if (target is not IBakable bakable)
+            {
+                throw new System.InvalidOperationException($"target is not IBakable");
+            }
+            string path = AssetDatabase.GetAssetPath(target);
+            // replace path to .exr
+            path = $"{path[..path.LastIndexOf('.')]}.exr";
+            BakeHelper.Bake(bakable, path);
         }
     }
 }

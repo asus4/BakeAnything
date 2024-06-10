@@ -12,7 +12,7 @@ namespace BakeAnything
         public override int Frames => 0;
         public override int Channels => 0;
 
-        public override ReadOnlySpan<float> Bake()
+        public override ReadOnlySpan<Color> Bake()
         {
             throw new NotImplementedException();
         }

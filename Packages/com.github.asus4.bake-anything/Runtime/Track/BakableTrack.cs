@@ -13,6 +13,6 @@ namespace BakeAnything
 
         public int Width => Frames;
         public int Height => Channels;
-        public abstract ReadOnlySpan<float> Bake();
+        public abstract ReadOnlySpan<Color> Bake();
     }
 }

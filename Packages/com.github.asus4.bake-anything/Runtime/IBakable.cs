@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace BakeAnything
 {
@@ -6,6 +7,6 @@ namespace BakeAnything
     {
         int Width { get; }
         int Height { get; }
-        ReadOnlySpan<float> Bake();
+        ReadOnlySpan<Color> Bake();
     }
 }

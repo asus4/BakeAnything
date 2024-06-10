@@ -1,7 +1,8 @@
 using System;
 using System.IO;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 
 namespace BakeAnything
 {
@@ -17,24 +18,29 @@ namespace BakeAnything
             return AssetDatabase.GetAssetPath(obj);
         }
 
-        public static void Bake(string defaultName, IBakable bakable)
+        public static void Bake(IBakable bakable, string path)
         {
-            string path = EditorUtility.SaveFilePanel("Bake to Exr", Application.dataPath, defaultName, "exr");
-
-            if (!Path.IsPathRooted(path))
-            {
-                path = Path.Combine(Application.dataPath, path);
-            }
             Debug.Log($"Bake {path}");
-            // Check if the path is inside of the Assets folder or not
-            if (path.StartsWith("Assets/"))
+
+            int width = bakable.Width;
+            int height = bakable.Height;
+            ReadOnlySpan<Color> colors = bakable.Bake();
+            if (colors.Length > width * height)
             {
-                Debug.Log("Bake succeeded");
+                throw new Exception($"Baked data is too long: {colors.Length} > {width} * {height}");
             }
-            else
-            {
-                Debug.LogError("Bake failed: path is not inside of the Assets folder");
-            }
+
+            var texture = new Texture2D(
+                width, height,
+                textureFormat: TextureFormat.RGBAHalf,
+                mipChain: false,
+                linear: true);
+            var data = new Color[width * height];
+            colors.CopyTo(data);
+            texture.SetPixels(data);
+
+            // clean up
+            UnityEngine.Object.DestroyImmediate(texture);
         }
     }
 }
