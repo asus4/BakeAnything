@@ -15,6 +15,8 @@ public class MidiTest : MonoBehaviour
 
     private void Start()
     {
+        Application.runInBackground = true;
+
         sequencer = new MidiSequencer(midiFile.bytes);
         audioSource.Play();
     }

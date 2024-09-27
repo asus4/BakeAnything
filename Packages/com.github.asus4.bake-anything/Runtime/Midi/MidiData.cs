@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Text;
 
 namespace BakeAnything.Midi
@@ -21,7 +22,7 @@ namespace BakeAnything.Midi
         public override string ToString() => $"MidiFile: Tracks={Tracks.Count}";
     }
 
-    public class MidiTrack
+    public sealed class MidiTrack
     {
         public uint Duration;
         public uint TicksPerQuarterNote = 96;
@@ -72,7 +73,7 @@ namespace BakeAnything.Midi
     }
 
     [Serializable]
-    public class MetaEvent : ITimeEvent
+    public sealed class MetaEvent : ITimeEvent
     {
         public uint time;
         public byte type;
@@ -102,7 +103,8 @@ namespace BakeAnything.Midi
                     => $"[{time}: {EventType} {DataAsText}]",
                 // Others
                 MetaEventType.TempoSetting => $"[{time}: {EventType} Tempo={DataAsTempo}]",
-                _ => $"[{time}: {EventType}, {data.Length} bytes]",
+                // Default: Raw data Hex
+                _ => $"[{time}: {EventType}, 0x{string.Join(',', data.Select(b => b.ToString("X2")))}]",
             };
         }
     }

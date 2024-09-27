@@ -7,8 +7,9 @@ namespace BakeAnything.Midi
     {
         private readonly MidiFile midi;
         private readonly uint ticksPerQuarterNote = 480;
+        private readonly double tempo = 120; // default: 120bpm
+
         private uint previousTicks;
-        private double tempo = 120; // default: 120bpm
 
         public MidiSequencer(MidiFile midi)
         {

@@ -3,7 +3,10 @@ using UnityEngine;
 
 namespace BakeAnything
 {
-    [CreateAssetMenu(fileName = "AudioBakableTrack", menuName = "ScriptableObject/Bake Anything/Audio Bakable Track")]
+    [CreateAssetMenu(
+        fileName = "AudioBakableTrack",
+        menuName = "ScriptableObject/Bake Anything/Audio Bakable Track"
+    )]
     public sealed class AudioBakableTrack : BakableTrack
     {
         public enum Mode
@@ -46,7 +49,7 @@ namespace BakeAnything
             }
             if (max == 0)
             {
-                return;
+                return; // blank audio
             }
             for (int i = 0; i < samples.Length; i++)
             {

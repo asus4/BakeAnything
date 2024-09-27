@@ -68,6 +68,7 @@ namespace BakeAnything
                     alphaIsTransparency = false,
                 };
                 texture.SetPixels(data);
+                texture.Apply();
                 AssetDatabase.CreateAsset(texture, path);
             }
             else if (asset is Texture2D texture)
