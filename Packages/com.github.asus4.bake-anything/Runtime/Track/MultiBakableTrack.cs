@@ -16,21 +16,19 @@ namespace BakeAnything
         public override int Frames => Tracks.Max(track => track.Frames);
         public override int Channels => Tracks.Sum(track => track.Channels);
 
-        public override ReadOnlySpan<Color> Bake()
-        {
-            throw new NotImplementedException();
-        }
-
         private void OnValidate()
         {
-            // Ensure all tracks have the same frame rate.
+            // Ensure all tracks have the same settings.
             foreach (var track in Tracks)
             {
-                if (track.FrameRate != FrameRate)
-                {
-                    track.FrameRate = FrameRate;
-                }
+                track.Fps = Fps;
+                track.MaxWidth = MaxWidth;
             }
+        }
+
+        protected override void Bake(Span<Color> pixels)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace BakeAnything
 {
@@ -23,38 +25,62 @@ namespace BakeAnything
         [SerializeField]
         private bool normalize = true;
 
-        public override int Frames => Mathf.CeilToInt(clip.length * FrameRate);
+        private double SamplesPerFrame => (double)clip.frequency / Fps;
+
+        public override int Frames => (int)Math.Ceiling(clip.samples / clip.channels / SamplesPerFrame);
         public override int Channels => mode switch
         {
             Mode.Loudness => 1,
             _ => 0,
         };
 
-        public override ReadOnlySpan<Color> Bake()
+        protected override void Bake(Span<Color> pixels)
         {
             float[] samples = GetSamples(clip);
             if (normalize)
             {
-                Normalize(samples);
+                BurstCall.NormalizeAudio(samples);
             }
-            throw new NotImplementedException();
+            switch (mode)
+            {
+                case Mode.Loudness:
+                    BakeLoudness(samples, pixels);
+                    return;
+                default:
+                    throw new NotSupportedException($"Unsupported mode: {mode}");
+            };
         }
 
-        private static void Normalize(Span<float> samples)
+        private ReadOnlySpan<Color> BakeLoudness(float[] samples, Span<Color> buffer)
         {
-            float max = float.MinValue;
-            for (int i = 0; i < samples.Length; i++)
+            var frameSamples = SplitIntoFrames(samples, SamplesPerFrame);
+            Assert.AreEqual(buffer.Length, frameSamples.Count);
+
+            double min = double.MaxValue;
+            double max = double.MinValue;
+            for (int i = 0; i < buffer.Length; i++)
             {
-                max = Mathf.Max(max, Mathf.Abs(samples[i]));
+                double rms = BurstCall.ComputeRMS(frameSamples[i]);
+                min = Math.Min(min, rms);
+                max = Math.Max(max, rms);
+                buffer[i] = new Color((float)rms, 0, 0, 1);
             }
-            if (max == 0)
+
+            Debug.Log($"Loudness: min={min}, max={max}");
+            return buffer;
+        }
+
+        private static List<ArraySegment<float>> SplitIntoFrames(float[] samples, double samplesPerFrame)
+        {
+            int frameCount = (int)Math.Ceiling(samples.Length / samplesPerFrame);
+            var frames = new List<ArraySegment<float>>(frameCount);
+            for (int i = 0; i < frameCount; i++)
             {
-                return; // blank audio
+                int start = (int)(i * samplesPerFrame);
+                int end = (int)Math.Min(samples.Length, (i + 1) * samplesPerFrame);
+                frames.Add(new(samples, start, end - start));
             }
-            for (int i = 0; i < samples.Length; i++)
-            {
-                samples[i] /= max;
-            }
+            return frames;
         }
 
         private static float[] GetSamples(AudioClip clip)
@@ -66,7 +92,7 @@ namespace BakeAnything
             {
                 return allChannels;
             }
-            // Merge channels
+            // Merge interleaved channels
             var samples = new float[clip.samples / channels];
             for (int i = 0; i < samples.Length; i++)
             {

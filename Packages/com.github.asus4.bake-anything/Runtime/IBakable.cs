@@ -22,19 +22,4 @@ namespace BakeAnything
         public abstract int Height { get; }
         public abstract ReadOnlySpan<Color> Bake();
     }
-
-    /// <summary>
-    /// A time-based track that can be baked into a texture.
-    /// </summary>
-    public abstract class BakableTrack : AnythingBakable
-    {
-        [field: SerializeField]
-        public int FrameRate { get; internal set; } = 60;
-
-        public override int Width => Channels;
-        public override int Height => Frames;
-
-        public abstract int Frames { get; }
-        public abstract int Channels { get; }
-    }
 }
