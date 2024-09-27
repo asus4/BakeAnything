@@ -1,10 +1,11 @@
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
 namespace BakeAnything
 {
     /// <summary>
-    /// Adds a "Bake" button to the end of the inspector.
+    /// Add a "Bake" button to the end of the inspector.
     /// </summary>
     [CustomEditor(typeof(AnythingBakable), true)]
     public class AnythingBakableEditor : Editor
@@ -13,22 +14,33 @@ namespace BakeAnything
         {
             base.OnInspectorGUI();
 
-            if (GUILayout.Button("Bake"))
+            if (GUILayout.Button("Bake to Asset"))
             {
-                Bake();
+                BakeToAsset();
+            }
+            if (GUILayout.Button("Bake to EXR"))
+            {
+                BakeToEXR();
             }
         }
 
-        private void Bake()
+        protected virtual void BakeToAsset()
         {
-            if (target is not IBakable bakable)
-            {
-                throw new System.InvalidOperationException($"target is not IBakable");
-            }
-            string path = AssetDatabase.GetAssetPath(target);
-            // replace path to .asset
-            path = $"{path[..path.LastIndexOf('.')]}-baked.asset";
-            BakeHelper.Bake(bakable, path);
+            BakeHelper.BakeToAsset(target);
+        }
+
+        protected virtual void BakeToEXR()
+        {
+            string assetPath = AssetDatabase.GetAssetPath(target);
+            // Rename path to {original}-baked.exr
+            string fileName = $"{assetPath[..assetPath.LastIndexOf('.')]}-baked.exr";
+            string path = EditorUtility.SaveFilePanelInProject(
+                "Export to EXR",
+                Path.GetFileNameWithoutExtension(fileName),
+                "exr",
+                "Save baked data as EXR",
+                Path.GetDirectoryName(assetPath));
+            BakeHelper.ExportToEXR(target as IBakable, path);
         }
     }
 }

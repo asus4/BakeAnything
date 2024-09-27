@@ -10,21 +10,78 @@ namespace BakeAnything
     /// </summary>
     public static class BakeHelper
     {
-        public static string GetDefaultPath(UnityEngine.Object obj)
+        public static Texture2D BakeToTexture(
+            IBakable bakable,
+            Texture2D texture = null,
+            TextureWrapMode wrapMode = TextureWrapMode.Repeat,
+            FilterMode filterMode = FilterMode.Point)
         {
-            string path = AssetDatabase.GetAssetPath(obj);
-            // replace path to .asset
-            return $"{path[..path.LastIndexOf('.')]}-baked.asset";
+            int width = bakable.Width;
+            int height = bakable.Height;
+            ReadOnlySpan<Color> colors = bakable.Bake();
+
+            // Create asset if it doesn't exist
+            if (texture == null)
+            {
+                texture = new Texture2D(width, height, TextureFormat.RGBAHalf, false, true)
+                {
+                    alphaIsTransparency = false,
+                };
+            }
+            else
+            {
+                texture.Reinitialize(width, height, TextureFormat.RGBAHalf, false);
+            }
+
+            texture.wrapMode = wrapMode;
+            texture.filterMode = filterMode;
+            var data = new Color[width * height];
+            colors.CopyTo(data);
+            texture.SetPixels(data);
+            texture.Apply();
+            return texture;
         }
 
-        public static void Bake(UnityEngine.Object obj)
+        public static Texture2D BakeToAsset(IBakable bakable, string path,
+            TextureWrapMode wrapMode = TextureWrapMode.Repeat,
+            FilterMode filterMode = FilterMode.Point)
+        {
+            string textureName = Path.GetFileNameWithoutExtension(path);
+            var asset = AssetDatabase.LoadMainAssetAtPath(path);
+            if (asset == null)
+            {
+                // Create asset if it doesn't exist
+                var texture = BakeToTexture(bakable, null, wrapMode, filterMode);
+                AssetDatabase.CreateAsset(texture, path);
+                texture.name = textureName;
+                return texture;
+            }
+            else if (asset is Texture2D texture)
+            {
+                // Replace texture if it already exists
+                BakeToTexture(bakable, texture, wrapMode, filterMode);
+                texture.name = textureName;
+                EditorUtility.SetDirty(texture);
+                return texture;
+            }
+            else
+            {
+                // Don't create asset if it already exists with the other type
+                throw new Exception($"Asset already exists at {path}");
+            }
+        }
+
+        public static Texture2D BakeToAsset(UnityEngine.Object obj)
         {
             if (obj is not IBakable bakable)
             {
                 throw new InvalidOperationException($"target is not IBakable");
             }
 
-            string path = GetDefaultPath(obj);
+            string path = AssetDatabase.GetAssetPath(obj);
+            // Rename path to {original}-baked.asset
+            path = $"{path[..path.LastIndexOf('.')]}-baked.asset";
+
             path = EditorUtility.SaveFilePanelInProject(
                 "Bake into Texture",
                 Path.GetFileNameWithoutExtension(path),
@@ -33,59 +90,16 @@ namespace BakeAnything
                 Path.GetDirectoryName(path));
             if (string.IsNullOrEmpty(path))
             {
-                return;
+                return null;
             }
-            Bake(bakable, path);
+            return BakeToAsset(bakable, path);
         }
 
-        public static void Bake(IBakable bakable, string path,
-            TextureWrapMode wrapMode = TextureWrapMode.Repeat,
-            FilterMode filterMode = FilterMode.Point)
+        public static void ExportToEXR(IBakable bakable, string path)
         {
-            int width = bakable.Width;
-            int height = bakable.Height;
-            ReadOnlySpan<Color> colors = bakable.Bake();
-            if (colors.Length > width * height)
-            {
-                throw new Exception($"Baked data is too long: {colors.Length} > {width} * {height}");
-            }
-
-            var data = new Color[width * height];
-            colors.CopyTo(data);
-
-            var asset = AssetDatabase.LoadMainAssetAtPath(path);
-            if (asset == null)
-            {
-                // Create asset if it doesn't exist
-                var texture = new Texture2D(
-                width, height,
-                textureFormat: TextureFormat.RGBAHalf,
-                mipChain: false,
-                linear: true)
-                {
-                    wrapMode = wrapMode,
-                    filterMode = filterMode,
-                    alphaIsTransparency = false,
-                };
-                texture.SetPixels(data);
-                texture.Apply();
-                AssetDatabase.CreateAsset(texture, path);
-            }
-            else if (asset is Texture2D texture)
-            {
-                // Replace texture if it already exists
-                texture.Reinitialize(width, height, TextureFormat.RGBAHalf, hasMipMap: false);
-                texture.wrapMode = wrapMode;
-                texture.filterMode = filterMode;
-                texture.SetPixels(data);
-                texture.Apply();
-                EditorUtility.SetDirty(texture);
-            }
-            else
-            {
-                // Don't create asset if it already exists with the other type
-                throw new Exception($"Asset already exists at {path}");
-            }
+            var texture = BakeToTexture(bakable);
+            byte[] bytes = texture.EncodeToEXR();
+            File.WriteAllBytes(path, bytes);
         }
     }
 }
