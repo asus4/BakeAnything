@@ -2,27 +2,35 @@ using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
+using Unity.Mathematics;
+using UnityEngine.Assertions;
 
 namespace BakeAnything
 {
     /// <summary>
     /// Unsafe methods that calls Burst functions.
     /// </summary>
-    public static unsafe class BurstCall
+    internal static unsafe class BurstCall
     {
+        /// <summary>
+        /// max(abs(arr[n]))
+        /// </summary>
         [BurstCompile]
-        private static float AbsMax([ReadOnly] float* arr, int length)
+        internal static float AbsMax([ReadOnly] float* arr, int length)
         {
             float max = float.MinValue;
             for (int i = 0; i < length; i++)
             {
-                max = Math.Max(max, Math.Abs(arr[i]));
+                max = math.max(max, math.abs(arr[i]));
             }
             return max;
         }
 
+        /// <summary>
+        /// arr[n] = arr[n] * scalar
+        /// </summary>
         [BurstCompile]
-        private static void Mul(float* arr, int length, float scalar)
+        internal static void Mul(float* arr, int length, float scalar)
         {
             for (int i = 0; i < length; i++)
             {
@@ -30,8 +38,11 @@ namespace BakeAnything
             }
         }
 
+        /// <summary>
+        /// sum(arr[n] * arr[n])
+        /// </summary>
         [BurstCompile]
-        private static double SqrSum([ReadOnly] float* arr, int length)
+        internal static double SqrSum([ReadOnly] float* arr, int length)
         {
             double sqrSum = 0.0;
             for (int i = 0; i < length; i++)
@@ -41,7 +52,50 @@ namespace BakeAnything
             return sqrSum;
         }
 
-        public static void NormalizeAudio(Span<float> arr)
+        /// <summary>
+        /// min(arr[n])
+        /// max(arr[n]) 
+        /// </summary>
+        [BurstCompile]
+        internal static void MinMax(
+            [ReadOnly] float* arr, int length,
+            out float min, out float max)
+        {
+            min = float.MaxValue;
+            max = float.MinValue;
+            for (int i = 0; i < length; i++)
+            {
+                min = math.min(min, arr[i]);
+                max = math.max(max, arr[i]);
+            }
+        }
+
+        /// <summary>
+        /// arr[n] = (arr[n] + offset) * scale
+        /// </summary>
+        [BurstCompile]
+        internal static void AddMul(float* arr, int length, float offset, float scale)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                arr[i] = (arr[i] + offset) * scale;
+            }
+        }
+
+        internal static void NormalizeMinMax(Span<float> arr)
+        {
+            fixed (float* pArr = arr)
+            {
+                MinMax(pArr, arr.Length, out float min, out float max);
+                if (min == max)
+                {
+                    return; // blank audio
+                }
+                AddMul(pArr, arr.Length, offset: -min, scale: 1f / (max - min));
+            }
+        }
+
+        internal static void NormalizeAudio(Span<float> arr)
         {
             fixed (float* pArr = arr)
             {
@@ -50,16 +104,32 @@ namespace BakeAnything
                 {
                     return; // blank audio
                 }
-                float rMax = 1f / max;
-                Mul(pArr, arr.Length, rMax);
+                float scale = 1f / max;
+                Mul(pArr, arr.Length, scale);
             }
         }
 
-        public static double ComputeRMS(Span<float> arr)
+        internal static double ComputeRMS(Span<float> arr)
         {
             fixed (float* pArr = arr)
             {
-                return Math.Sqrt(SqrSum(pArr, arr.Length) / arr.Length);
+                return math.sqrt(SqrSum(pArr, arr.Length) / arr.Length);
+            }
+        }
+
+        [BurstCompile]
+        internal static void MergeInterleavedChannels(Span<float> interleavedIn, Span<float> mergedOut, int channels)
+        {
+            Assert.AreEqual(mergedOut.Length * channels, interleavedIn.Length);
+
+            for (int i = 0; i < mergedOut.Length; i++)
+            {
+                float sum = 0;
+                for (int j = 0; j < channels; j++)
+                {
+                    sum += interleavedIn[i * channels + j];
+                }
+                mergedOut[i] = sum / channels;
             }
         }
     }

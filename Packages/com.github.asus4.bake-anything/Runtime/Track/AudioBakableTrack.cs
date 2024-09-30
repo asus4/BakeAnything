@@ -27,16 +27,16 @@ namespace BakeAnything
 
         private double SamplesPerFrame => (double)clip.frequency / Fps;
 
-        public override int Frames => (int)Math.Ceiling(clip.samples / clip.channels / SamplesPerFrame);
+        public override int Frames => (int)Math.Ceiling(clip.samples / SamplesPerFrame);
         public override int Channels => mode switch
         {
             Mode.Loudness => 1,
             _ => 0,
         };
 
-        protected override void Bake(Span<Color> pixels)
+        protected override void BakeChannel(Span<float> buffer, int channel)
         {
-            float[] samples = GetSamples(clip);
+            float[] samples = GetMonoSamples(clip);
             if (normalize)
             {
                 BurstCall.NormalizeAudio(samples);
@@ -44,65 +44,55 @@ namespace BakeAnything
             switch (mode)
             {
                 case Mode.Loudness:
-                    BakeLoudness(samples, pixels);
+                    BakeLoudness(samples, buffer);
                     return;
                 default:
                     throw new NotSupportedException($"Unsupported mode: {mode}");
             };
         }
 
-        private ReadOnlySpan<Color> BakeLoudness(float[] samples, Span<Color> buffer)
+        private void BakeLoudness(float[] samples, Span<float> buffer)
         {
             var frameSamples = SplitIntoFrames(samples, SamplesPerFrame);
-            Assert.AreEqual(buffer.Length, frameSamples.Count);
+            Assert.AreEqual(buffer.Length, frameSamples.Length);
 
             double min = double.MaxValue;
             double max = double.MinValue;
             for (int i = 0; i < buffer.Length; i++)
             {
-                double rms = BurstCall.ComputeRMS(frameSamples[i]);
-                min = Math.Min(min, rms);
-                max = Math.Max(max, rms);
-                buffer[i] = new Color((float)rms, 0, 0, 1);
+                buffer[i] = (float)BurstCall.ComputeRMS(frameSamples[i]);
             }
+            BurstCall.NormalizeMinMax(buffer);
 
             Debug.Log($"Loudness: min={min}, max={max}");
-            return buffer;
         }
 
-        private static List<ArraySegment<float>> SplitIntoFrames(float[] samples, double samplesPerFrame)
+        private static ArraySegment<float>[] SplitIntoFrames(float[] samples, double samplesPerFrame)
         {
             int frameCount = (int)Math.Ceiling(samples.Length / samplesPerFrame);
-            var frames = new List<ArraySegment<float>>(frameCount);
+            var frames = new ArraySegment<float>[frameCount];
             for (int i = 0; i < frameCount; i++)
             {
                 int start = (int)(i * samplesPerFrame);
                 int end = (int)Math.Min(samples.Length, (i + 1) * samplesPerFrame);
-                frames.Add(new(samples, start, end - start));
+                frames[i] = new(samples, start, end - start);
             }
             return frames;
         }
 
-        private static float[] GetSamples(AudioClip clip)
+        private static float[] GetMonoSamples(AudioClip clip)
         {
             int channels = clip.channels;
-            var allChannels = new float[clip.samples * channels];
-            clip.GetData(allChannels, 0);
+            var interleaved = new float[clip.samples * channels];
+            clip.GetData(interleaved, 0);
             if (channels == 1)
             {
-                return allChannels;
+                return interleaved;
             }
+
             // Merge interleaved channels
-            var samples = new float[clip.samples / channels];
-            for (int i = 0; i < samples.Length; i++)
-            {
-                float sum = 0;
-                for (int j = 0; j < channels; j++)
-                {
-                    sum += allChannels[i * channels + j];
-                }
-                samples[i] = sum / channels;
-            }
+            var samples = new float[clip.samples];
+            BurstCall.MergeInterleavedChannels(interleaved, samples, channels);
             return samples;
         }
     }

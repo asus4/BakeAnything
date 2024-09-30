@@ -1,5 +1,14 @@
 using System;
+using System.Buffers;
+using System.Diagnostics;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Jobs;
 using UnityEngine;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace BakeAnything
 {
@@ -36,14 +45,72 @@ namespace BakeAnything
             }
         }
 
-        public override ReadOnlySpan<Color> Bake()
+
+        public unsafe override ReadOnlySpan<Color> Bake()
         {
             // Clear the buffer
             PixelBuffer.Fill(new Color(0, 0, 0, 0));
-            Bake(PixelBuffer);
+
+            // Bake all channels
+            var pool = ArrayPool<float>.Shared;
+            int frameLength = Frames;
+            int channelLength = Channels;
+            var bufferArr = pool.Rent(frameLength);
+            var buffer = bufferArr.AsSpan(0, frameLength);
+
+            for (int ch = 0; ch < channelLength; ch++)
+            {
+                NotifyProgress((float)ch / channelLength, $"Baking channel {ch + 1} / {channelLength}...");
+
+                buffer.Fill(0);
+                BakeChannel(buffer, ch);
+
+                fixed (float* inPtr = buffer)
+                fixed (Color* outPrt = PixelBuffer)
+                {
+                    CopyToChannel(inPtr, outPrt, frameLength, ch);
+                }
+            }
+
+            ClearProgress();
+
+            pool.Return(bufferArr);
+
             return PixelBuffer;
         }
 
-        protected abstract void Bake(Span<Color> pixels);
+        protected abstract void BakeChannel(Span<float> buffer, int channel);
+
+        [BurstCompile]
+        private unsafe static void CopyToChannel(
+            float* input,
+            Color* output,
+            int length,
+            int channel)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                Color c = output[i];
+                c[channel] = input[i];
+                output[i] = c;
+            }
+        }
+
+        [Conditional("UNITY_EDITOR")]
+        protected static void NotifyProgress(float progress, string message)
+        {
+#if UNITY_EDITOR
+            UnityEngine.Debug.Log(message);
+            EditorUtility.DisplayProgressBar("Bake Anything", message, progress);
+#endif // UNITY_EDITOR
+        }
+
+        [Conditional("UNITY_EDITOR")]
+        protected static void ClearProgress()
+        {
+#if UNITY_EDITOR
+            EditorUtility.ClearProgressBar();
+#endif // UNITY_EDITOR
+        }
     }
 }

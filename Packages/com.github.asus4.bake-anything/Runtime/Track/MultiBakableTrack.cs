@@ -25,8 +25,7 @@ namespace BakeAnything
                 track.MaxWidth = MaxWidth;
             }
         }
-
-        protected override void Bake(Span<Color> pixels)
+        protected override void BakeChannel(Span<float> buffer, int channel)
         {
             throw new NotImplementedException();
         }
