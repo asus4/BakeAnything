@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -26,21 +27,30 @@ namespace BakeAnything
 
         protected virtual void BakeToAsset()
         {
-            BakeHelper.BakeToAsset(target);
+            if (TryGetSavePath(target, "asset", out string path))
+            {
+                BakeAnythingCore.BakeToAsset(target as IBakable, path);
+            }
         }
 
         protected virtual void BakeToEXR()
         {
+            if (TryGetSavePath(target, "exr", out string path))
+            {
+                BakeAnythingCore.ExportToEXR(target as IBakable, path);
+            }
+        }
+
+        protected static bool TryGetSavePath(UnityEngine.Object target, string extension, out string savePath)
+        {
             string assetPath = AssetDatabase.GetAssetPath(target);
-            // Rename path to {original}-baked.exr
-            string fileName = $"{assetPath[..assetPath.LastIndexOf('.')]}-baked.exr";
-            string path = EditorUtility.SaveFilePanelInProject(
-                "Export to EXR",
-                Path.GetFileNameWithoutExtension(fileName),
-                "exr",
-                "Save baked data as EXR",
-                Path.GetDirectoryName(assetPath));
-            BakeHelper.ExportToEXR(target as IBakable, path);
+            savePath = EditorUtility.SaveFilePanelInProject(
+                title: $"Bake to {extension}",
+                defaultName: $"{Path.GetFileNameWithoutExtension(assetPath)}-baked",
+                extension: extension,
+                message: $"Bake data as {extension}",
+                path: Path.GetDirectoryName(assetPath));
+            return !string.IsNullOrEmpty(savePath);
         }
     }
 }

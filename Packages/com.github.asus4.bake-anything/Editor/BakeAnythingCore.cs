@@ -6,9 +6,9 @@ using UnityEngine;
 namespace BakeAnything
 {
     /// <summary>
-    /// Core methods to bake anything.
+    /// Core methods to bake texture.
     /// </summary>
-    public static class BakeHelper
+    public static class BakeAnythingCore
     {
         public static Texture2D BakeToTexture(
             IBakable bakable,
@@ -42,7 +42,9 @@ namespace BakeAnything
             return texture;
         }
 
-        public static Texture2D BakeToAsset(IBakable bakable, string path,
+        public static Texture2D BakeToAsset(
+            IBakable bakable,
+            string path,
             TextureWrapMode wrapMode = TextureWrapMode.Repeat,
             FilterMode filterMode = FilterMode.Point)
         {
@@ -50,7 +52,7 @@ namespace BakeAnything
             var asset = AssetDatabase.LoadMainAssetAtPath(path);
             if (asset == null)
             {
-                // Create asset if it doesn't exist
+                // Create new asset at the path
                 var texture = BakeToTexture(bakable, null, wrapMode, filterMode);
                 AssetDatabase.CreateAsset(texture, path);
                 texture.name = textureName;
@@ -71,35 +73,14 @@ namespace BakeAnything
             }
         }
 
-        public static Texture2D BakeToAsset(UnityEngine.Object obj)
-        {
-            if (obj is not IBakable bakable)
-            {
-                throw new InvalidOperationException($"target is not IBakable");
-            }
-
-            string path = AssetDatabase.GetAssetPath(obj);
-            // Rename path to {original}-baked.asset
-            path = $"{path[..path.LastIndexOf('.')]}-baked.asset";
-
-            path = EditorUtility.SaveFilePanelInProject(
-                "Bake into Texture",
-                Path.GetFileNameWithoutExtension(path),
-                "asset",
-                "Save baked data as texture",
-                Path.GetDirectoryName(path));
-            if (string.IsNullOrEmpty(path))
-            {
-                return null;
-            }
-            return BakeToAsset(bakable, path);
-        }
-
         public static void ExportToEXR(IBakable bakable, string path)
         {
             var texture = BakeToTexture(bakable);
             byte[] bytes = texture.EncodeToEXR();
             File.WriteAllBytes(path, bytes);
+
+            // TODO: Override texture importer settings if it's a inside of the project
+            AssetDatabase.Refresh();
         }
     }
 }

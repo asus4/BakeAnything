@@ -3,9 +3,9 @@ using UnityEngine;
 
 namespace BakeAnything
 {
-
     /// <summary>
-    /// A time-based track that can be baked into a texture.
+    /// A time-based data that can be baked into a texture.
+    /// (e.g. Animation, MIDI, Audio, etc.)
     /// </summary>
     public abstract class BakableTrack : AnythingBakable
     {
@@ -22,22 +22,23 @@ namespace BakeAnything
         public abstract int Channels { get; }
 
 
-        private Color[] buffer;
+        private Color[] pixelBuffer;
         private Span<Color> PixelBuffer
         {
             get
             {
                 int length = Width * Height;
-                if (buffer == null || buffer.Length != length)
+                if (pixelBuffer == null || pixelBuffer.Length != length)
                 {
-                    buffer = new Color[length];
+                    pixelBuffer = new Color[length];
                 }
-                return buffer;
+                return pixelBuffer;
             }
         }
 
         public override ReadOnlySpan<Color> Bake()
         {
+            // Clear the buffer
             PixelBuffer.Fill(new Color(0, 0, 0, 0));
             Bake(PixelBuffer);
             return PixelBuffer;
