@@ -31,7 +31,7 @@ namespace BakeAnything
         }
 
         [BurstCompile]
-        private static double SqrSum(float* arr, int length)
+        private static double SqrSum([ReadOnly] float* arr, int length)
         {
             double sqrSum = 0.0;
             for (int i = 0; i < length; i++)
