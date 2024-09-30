@@ -13,7 +13,7 @@ namespace BakeAnything
         public int Fps { get; internal set; } = 60;
 
         [field: SerializeField]
-        public int MaxWidth { get; internal set; } = 4096;
+        public int MaxWidth { get; internal set; } = 8192;
 
         public override int Width => Frames;
         public override int Height => Mathf.CeilToInt(Channels / 4f); // RGBA
