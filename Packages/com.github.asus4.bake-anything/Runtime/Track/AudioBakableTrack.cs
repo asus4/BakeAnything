@@ -1,10 +1,15 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
+using BakeAnything.Internal;
 using UnityEngine;
 using UnityEngine.Assertions;
 
 namespace BakeAnything
 {
+    /// <summary>
+    /// Bakes analyzed audio data
+    /// </summary>
     [CreateAssetMenu(
         fileName = "AudioBakableTrack",
         menuName = "ScriptableObject/Bake Anything/Audio Bakable Track"
@@ -31,12 +36,14 @@ namespace BakeAnything
         public override int Channels => mode switch
         {
             Mode.Loudness => 1,
-            _ => 0,
+            _ => throw new NotImplementedException(),
         };
 
         protected override void BakeChannel(Span<float> buffer, int channel)
         {
-            float[] samples = GetMonoSamples(clip);
+            var samples = new float[clip.samples];
+            clip.GetMonoData(samples);
+
             if (normalize)
             {
                 BurstCall.NormalizeAudio(samples);
@@ -47,7 +54,7 @@ namespace BakeAnything
                     BakeLoudness(samples, buffer);
                     return;
                 default:
-                    throw new NotSupportedException($"Unsupported mode: {mode}");
+                    throw new NotImplementedException($"Unsupported mode: {mode}");
             };
         }
 
@@ -56,15 +63,14 @@ namespace BakeAnything
             var frameSamples = SplitIntoFrames(samples, SamplesPerFrame);
             Assert.AreEqual(buffer.Length, frameSamples.Length);
 
-            double min = double.MaxValue;
-            double max = double.MinValue;
             for (int i = 0; i < buffer.Length; i++)
             {
                 buffer[i] = (float)BurstCall.ComputeRMS(frameSamples[i]);
             }
-            BurstCall.NormalizeMinMax(buffer);
-
-            Debug.Log($"Loudness: min={min}, max={max}");
+            if (normalize)
+            {
+                BurstCall.NormalizeMinMax(buffer);
+            }
         }
 
         private static ArraySegment<float>[] SplitIntoFrames(float[] samples, double samplesPerFrame)
@@ -78,22 +84,6 @@ namespace BakeAnything
                 frames[i] = new(samples, start, end - start);
             }
             return frames;
-        }
-
-        private static float[] GetMonoSamples(AudioClip clip)
-        {
-            int channels = clip.channels;
-            var interleaved = new float[clip.samples * channels];
-            clip.GetData(interleaved, 0);
-            if (channels == 1)
-            {
-                return interleaved;
-            }
-
-            // Merge interleaved channels
-            var samples = new float[clip.samples];
-            BurstCall.MergeInterleavedChannels(interleaved, samples, channels);
-            return samples;
         }
     }
 }

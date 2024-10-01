@@ -4,22 +4,24 @@ using UnityEngine;
 namespace BakeAnything
 {
     /// <summary>
-    /// Something that can be baked into a texture.
+    /// Core interface that can be baked into a texture.
     /// </summary>
     public interface IBakable
     {
+        /// <summary>
+        /// The width of the texture
+        /// </summary>
         int Width { get; }
-        int Height { get; }
-        ReadOnlySpan<Color> Bake();
-    }
 
-    /// <summary>
-    /// A ScriptableObject wrapper of IBakable.
-    /// </summary>
-    public abstract class AnythingBakable : ScriptableObject, IBakable
-    {
-        public abstract int Width { get; }
-        public abstract int Height { get; }
-        public abstract ReadOnlySpan<Color> Bake();
+        /// <summary>
+        /// The height of the texture
+        /// </summary>
+        int Height { get; }
+
+        /// <summary>
+        /// Bakes data into color array.
+        /// </summary>
+        /// <returns>Color array</returns>
+        ReadOnlySpan<Color> Bake();
     }
 }

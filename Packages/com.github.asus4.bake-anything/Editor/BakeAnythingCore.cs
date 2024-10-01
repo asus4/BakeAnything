@@ -13,12 +13,19 @@ namespace BakeAnything
     /// </summary>
     public static class BakeAnythingCore
     {
+        /// <summary>
+        /// Bakes data into a texture.
+        /// </summary>
+        /// <param name="bakable">An IBakable instance</param>
+        /// <param name="texture">A texture to be baked. When null, creates new texture</param>
+        /// <param name="options">Options</param>
+        /// <returns>The Baked Texture</returns>
         public static Texture2D BakeToTexture(
             IBakable bakable,
             Texture2D texture = null,
-            TextureWrapMode wrapMode = TextureWrapMode.Repeat,
-            FilterMode filterMode = FilterMode.Point)
+            BakeOptions options = null)
         {
+            options ??= BakeOptions.Default;
             int width = bakable.Width;
             int height = bakable.Height;
             ReadOnlySpan<Color> colors = bakable.Bake();
@@ -26,18 +33,18 @@ namespace BakeAnything
             // Create asset if it doesn't exist
             if (texture == null)
             {
-                texture = new Texture2D(width, height, TextureFormat.RGBAHalf, false, true)
+                texture = new Texture2D(width, height, options.Format, false, true)
                 {
                     alphaIsTransparency = false,
                 };
             }
             else
             {
-                texture.Reinitialize(width, height, TextureFormat.RGBAHalf, false);
+                texture.Reinitialize(width, height, options.Format, false);
             }
 
-            texture.wrapMode = wrapMode;
-            texture.filterMode = filterMode;
+            texture.wrapMode = options.WrapMode;
+            texture.filterMode = options.FilterMode;
             var data = new Color[width * height];
             colors.CopyTo(data);
             texture.SetPixels(data);
@@ -45,18 +52,29 @@ namespace BakeAnything
             return texture;
         }
 
+        /// <summary>
+        /// Bakes and saves data into a texture asset.
+        /// </summary>
+        /// <param name="bakable">An IBakable instance</param>
+        /// <param name="path">A path inside project</param>
+        /// <param name="options">Options</param>
+        /// <returns>The Baked Texture</returns>
         public static Texture2D BakeToAsset(
             IBakable bakable,
             string path,
-            TextureWrapMode wrapMode = TextureWrapMode.Repeat,
-            FilterMode filterMode = FilterMode.Point)
+            BakeOptions options = null)
         {
+            if (!IsProjectPath(path))
+            {
+                throw new ArgumentException("Path must be inside of the project", nameof(path));
+            }
+
             string textureName = Path.GetFileNameWithoutExtension(path);
             var asset = AssetDatabase.LoadMainAssetAtPath(path);
             if (asset == null)
             {
                 // Create new asset at the path
-                var texture = BakeToTexture(bakable, null, wrapMode, filterMode);
+                var texture = BakeToTexture(bakable, null, options);
                 AssetDatabase.CreateAsset(texture, path);
                 texture.name = textureName;
                 return texture;
@@ -64,7 +82,7 @@ namespace BakeAnything
             else if (asset is Texture2D texture)
             {
                 // Replace texture if it already exists
-                BakeToTexture(bakable, texture, wrapMode, filterMode);
+                BakeToTexture(bakable, texture, options);
                 texture.name = textureName;
                 EditorUtility.SetDirty(texture);
                 return texture;
@@ -76,29 +94,36 @@ namespace BakeAnything
             }
         }
 
-        public static void ExportToEXR(IBakable bakable, string path)
+        /// <summary>
+        /// Exports data into an EXR file.
+        /// </summary>
+        /// <param name="bakable">An IBakable instance</param>
+        /// <param name="path">An export path</param>
+        /// <param name="options">Options</param>
+        public static void ExportToEXR(
+            IBakable bakable,
+            string path,
+            BakeOptions options = null)
         {
             var texture = BakeToTexture(bakable);
             byte[] bytes = texture.EncodeToEXR();
             File.WriteAllBytes(path, bytes);
 
             // Override texture importer settings if it's a inside of the project
-            bool isProjectPath = Path.GetFullPath(path).StartsWith(Application.dataPath);
-            if (isProjectPath)
+            if (IsProjectPath(path))
             {
                 AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
                 var importer = AssetImporter.GetAtPath(path) as TextureImporter;
                 Assert.IsNotNull(importer);
                 int maxSize = Mathf.NextPowerOfTwo(Mathf.Max(texture.width, texture.height));
-                ModifyImporterSetting(importer, maxSize);
+                ModifyImporterSetting(importer, maxSize, options);
             }
         }
 
         public static void ModifyImporterSetting(
             TextureImporter importer,
             int maxTextureSize = 8192,
-            TextureWrapMode wrapMode = TextureWrapMode.Repeat,
-            FilterMode filterMode = FilterMode.Point)
+            BakeOptions options = null)
         {
             if (maxTextureSize > 16384)
             {
@@ -114,8 +139,8 @@ namespace BakeAnything
             importer.mipmapEnabled = false;
             importer.isReadable = true;
 
-            importer.wrapMode = wrapMode;
-            importer.filterMode = filterMode;
+            importer.wrapMode = options.WrapMode;
+            importer.filterMode = options.FilterMode;
             importer.anisoLevel = 0;
 
             var defaultSettings = importer.GetDefaultPlatformTextureSettings();
@@ -124,7 +149,7 @@ namespace BakeAnything
             defaultSettings.androidETC2FallbackOverride = AndroidETC2FallbackOverride.Quality16Bit;
             defaultSettings.maxTextureSize = maxTextureSize;
             defaultSettings.resizeAlgorithm = TextureResizeAlgorithm.Mitchell;
-            defaultSettings.format = TextureImporterFormat.RGBAHalf;
+            defaultSettings.format = options.Format.ToImporterFormat();
             defaultSettings.textureCompression = TextureImporterCompression.Uncompressed;
             defaultSettings.compressionQuality = 100;
             importer.SetPlatformTextureSettings(defaultSettings);
@@ -156,6 +181,30 @@ namespace BakeAnything
             }
 
             importer.SaveAndReimport();
+        }
+
+        private static TextureImporterFormat ToImporterFormat(this TextureFormat format)
+        {
+            // Covers common formats, fallback to automatic
+            return format switch
+            {
+                TextureFormat.Alpha8 => TextureImporterFormat.Alpha8,
+                TextureFormat.ARGB4444 => TextureImporterFormat.ARGB16,
+                TextureFormat.ARGB32 => TextureImporterFormat.ARGB32,
+                TextureFormat.RGB24 => TextureImporterFormat.RGB24,
+                TextureFormat.RGB565 => TextureImporterFormat.RGB16,
+                TextureFormat.RG16 => TextureImporterFormat.RG16,
+                TextureFormat.R8 => TextureImporterFormat.R8,
+                TextureFormat.RGBA32 => TextureImporterFormat.RGBA32,
+                TextureFormat.RGBA64 => TextureImporterFormat.RGBA64,
+                TextureFormat.RGBA4444 => TextureImporterFormat.RGBA16,
+                _ => TextureImporterFormat.Automatic,
+            };
+        }
+
+        private static bool IsProjectPath(string path)
+        {
+            return Path.GetFullPath(path).StartsWith(Application.dataPath);
         }
     }
 }

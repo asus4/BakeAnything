@@ -1,11 +1,9 @@
 using System;
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Jobs;
 using Unity.Mathematics;
-using UnityEngine.Assertions;
 
-namespace BakeAnything
+namespace BakeAnything.Internal
 {
     /// <summary>
     /// Unsafe methods that calls Burst functions.
@@ -114,22 +112,6 @@ namespace BakeAnything
             fixed (float* pArr = arr)
             {
                 return math.sqrt(SqrSum(pArr, arr.Length) / arr.Length);
-            }
-        }
-
-        [BurstCompile]
-        internal static void MergeInterleavedChannels(Span<float> interleavedIn, Span<float> mergedOut, int channels)
-        {
-            Assert.AreEqual(mergedOut.Length * channels, interleavedIn.Length);
-
-            for (int i = 0; i < mergedOut.Length; i++)
-            {
-                float sum = 0;
-                for (int j = 0; j < channels; j++)
-                {
-                    sum += interleavedIn[i * channels + j];
-                }
-                mergedOut[i] = sum / channels;
             }
         }
     }

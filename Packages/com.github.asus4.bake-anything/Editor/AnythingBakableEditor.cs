@@ -1,6 +1,7 @@
 using System.IO;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace BakeAnything
 {
@@ -10,10 +11,35 @@ namespace BakeAnything
     [CustomEditor(typeof(AnythingBakable), true)]
     public class AnythingBakableEditor : Editor
     {
+        private SerializedProperty bakeOptions;
+
+        private void OnEnable()
+        {
+            bakeOptions = serializedObject.FindProperty("bakeOptions");
+            Assert.IsNotNull(bakeOptions);
+        }
+
         public override void OnInspectorGUI()
         {
-            base.OnInspectorGUI();
+            EditorGUI.BeginChangeCheck();
+            // base.OnInspectorGUI();
+            // Draw default inspector without bakeOptions
+            DrawPropertiesExcluding(serializedObject, "bakeOptions");
 
+            var target = this.target as AnythingBakable;
+            // Statistics
+            EditorGUILayout.Space();
+            GUILayout.Label("Texture Statistics:", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox($"Width: {target.Width}\nHeight: {target.Height}", MessageType.None);
+
+            // Draw Options
+            EditorGUILayout.PropertyField(bakeOptions);
+            if (EditorGUI.EndChangeCheck())
+            {
+                serializedObject.ApplyModifiedProperties();
+            }
+
+            // Buttons
             if (GUILayout.Button("Bake to Asset"))
             {
                 BakeToAsset();
@@ -26,17 +52,19 @@ namespace BakeAnything
 
         protected virtual void BakeToAsset()
         {
+            var target = this.target as AnythingBakable;
             if (TryGetSavePath(target, "asset", out string path))
             {
-                BakeAnythingCore.BakeToAsset(target as IBakable, path);
+                BakeAnythingCore.BakeToAsset(target, path, target.BakeOptions);
             }
         }
 
         protected virtual void BakeToEXR()
         {
+            var target = this.target as AnythingBakable;
             if (TryGetSavePath(target, "exr", out string path))
             {
-                BakeAnythingCore.ExportToEXR(target as IBakable, path);
+                BakeAnythingCore.ExportToEXR(target, path, target.BakeOptions);
             }
         }
 

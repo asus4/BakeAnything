@@ -2,8 +2,7 @@ using System;
 using System.Buffers;
 using System.Diagnostics;
 using Unity.Burst;
-using Unity.Collections;
-using Unity.Jobs;
+using Unity.Mathematics;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -24,8 +23,16 @@ namespace BakeAnything
         [field: SerializeField]
         public int MaxWidth { get; internal set; } = 8192;
 
-        public override int Width => Frames;
-        public override int Height => Mathf.CeilToInt(Channels / 4f); // RGBA
+        public override int Width => math.min(Frames, MaxWidth);
+        public override int Height
+        {
+            get
+            {
+                int widthWraps = (int)math.ceil((double)Frames / MaxWidth);
+                int channelWraps = (int)math.ceil(Channels / 4.0); // RGBA
+                return widthWraps * channelWraps;
+            }
+        }
 
         public abstract int Frames { get; }
         public abstract int Channels { get; }
@@ -51,35 +58,50 @@ namespace BakeAnything
             // Clear the buffer
             PixelBuffer.Fill(new Color(0, 0, 0, 0));
 
+            int frames = Frames;
+            int channels = Channels;
+            var bufferArr = ArrayPool<float>.Shared.Rent(frames);
+            var buffer = bufferArr.AsSpan(0, frames);
+
             // Bake all channels
-            var pool = ArrayPool<float>.Shared;
-            int frameLength = Frames;
-            int channelLength = Channels;
-            var bufferArr = pool.Rent(frameLength);
-            var buffer = bufferArr.AsSpan(0, frameLength);
-
-            for (int ch = 0; ch < channelLength; ch++)
+            for (int channel = 0; channel < channels; channel++)
             {
-                NotifyProgress((float)ch / channelLength, $"Baking channel {ch + 1} / {channelLength}...");
+                NotifyProgress((float)channel / channels, $"Baking channel {channel + 1} / {channels}...");
 
+                // Bake single channel
                 buffer.Fill(0);
-                BakeChannel(buffer, ch);
-
-                fixed (float* inPtr = buffer)
-                fixed (Color* outPrt = PixelBuffer)
-                {
-                    CopyToChannel(inPtr, outPrt, frameLength, ch);
-                }
+                BakeChannel(buffer, channel);
+                CopyBufferToChannel(buffer, PixelBuffer, Width, channel);
             }
 
             ClearProgress();
 
-            pool.Return(bufferArr);
+            ArrayPool<float>.Shared.Return(bufferArr);
 
             return PixelBuffer;
         }
 
         protected abstract void BakeChannel(Span<float> buffer, int channel);
+
+        static unsafe void CopyBufferToChannel(Span<float> buffer, Span<Color> pixelBuffer, int width, int channel)
+        {
+            if (buffer.Length < width)
+            {
+                fixed (float* inPtr = buffer)
+                fixed (Color* outPrt = pixelBuffer)
+                {
+                    CopyToChannel(inPtr, outPrt, buffer.Length, channel);
+                }
+                return;
+            }
+            // else
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                Color c = pixelBuffer[i];
+                c[channel] = buffer[i];
+                pixelBuffer[i] = c;
+            }
+        }
 
         [BurstCompile]
         private unsafe static void CopyToChannel(
