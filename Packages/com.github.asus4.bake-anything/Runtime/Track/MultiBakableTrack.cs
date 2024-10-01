@@ -8,10 +8,10 @@ namespace BakeAnything
         fileName = "MultiBakableTrack",
         menuName = "ScriptableObject/Bake Anything/Multi Bakable Track"
     )]
-    public sealed class MultiBakableTrack : BakableTrack
+    public sealed class MultiBakableTrack : BakeableTrack
     {
         [field: SerializeField]
-        public BakableTrack[] Tracks { get; private set; }
+        public BakeableTrack[] Tracks { get; private set; }
 
         public override int Frames => Tracks.Max(track => track.Frames);
         public override int Channels => Tracks.Sum(track => track.Channels);

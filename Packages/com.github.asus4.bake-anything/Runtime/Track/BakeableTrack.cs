@@ -15,7 +15,7 @@ namespace BakeAnything
     /// A time-based data that can be baked into a texture.
     /// (e.g. Animation, MIDI, Audio, etc.)
     /// </summary>
-    public abstract class BakableTrack : AnythingBakable
+    public abstract class BakeableTrack : AnythingBakeable
     {
         [field: SerializeField, Min(1), Tooltip("Frames / Second")]
         public int Fps { get; internal set; } = 60;
@@ -85,8 +85,12 @@ namespace BakeAnything
 
         static unsafe void CopyBufferToChannel(Span<float> buffer, Span<Color> pixelBuffer, int width, int channel)
         {
+            Log($"buffer.length={buffer.Length}, width={width}");
+
             if (buffer.Length < width)
             {
+                Log("single-line");
+                // Just copy single strait line.
                 fixed (float* inPtr = buffer)
                 fixed (Color* outPrt = pixelBuffer)
                 {
@@ -94,6 +98,8 @@ namespace BakeAnything
                 }
                 return;
             }
+
+            Log("multi-line");
             // else
             for (int i = 0; i < buffer.Length; i++)
             {
@@ -104,25 +110,25 @@ namespace BakeAnything
         }
 
         [BurstCompile]
-        private unsafe static void CopyToChannel(
-            float* input,
-            Color* output,
-            int length,
-            int channel)
+        private unsafe static void CopyToChannel(float* input, Color* output, int length, int channel)
         {
             for (int i = 0; i < length; i++)
             {
-                Color c = output[i];
-                c[channel] = input[i];
-                output[i] = c;
+                float* f = (float*)&output[i] + channel;
+                *f = input[i];
             }
+        }
+
+        [Conditional("UNITY_EDITOR")]
+        static void Log(string message)
+        {
+            UnityEngine.Debug.Log(message);
         }
 
         [Conditional("UNITY_EDITOR")]
         protected static void NotifyProgress(float progress, string message)
         {
 #if UNITY_EDITOR
-            UnityEngine.Debug.Log(message);
             EditorUtility.DisplayProgressBar("Bake Anything", message, progress);
 #endif // UNITY_EDITOR
         }

@@ -8,8 +8,8 @@ namespace BakeAnything
     /// <summary>
     /// Add a "Bake" button to the end of the inspector.
     /// </summary>
-    [CustomEditor(typeof(AnythingBakable), true)]
-    public class AnythingBakableEditor : Editor
+    [CustomEditor(typeof(AnythingBakeable), true)]
+    public class AnythingBakeableEditor : Editor
     {
         private SerializedProperty bakeOptions;
 
@@ -26,7 +26,7 @@ namespace BakeAnything
             // Draw default inspector without bakeOptions
             DrawPropertiesExcluding(serializedObject, "bakeOptions");
 
-            var target = this.target as AnythingBakable;
+            var target = this.target as AnythingBakeable;
             // Statistics
             EditorGUILayout.Space();
             GUILayout.Label("Texture Statistics:", EditorStyles.boldLabel);
@@ -52,7 +52,7 @@ namespace BakeAnything
 
         protected virtual void BakeToAsset()
         {
-            var target = this.target as AnythingBakable;
+            var target = this.target as AnythingBakeable;
             if (TryGetSavePath(target, "asset", out string path))
             {
                 BakeAnythingCore.BakeToAsset(target, path, target.BakeOptions);
@@ -61,7 +61,7 @@ namespace BakeAnything
 
         protected virtual void BakeToEXR()
         {
-            var target = this.target as AnythingBakable;
+            var target = this.target as AnythingBakeable;
             if (TryGetSavePath(target, "exr", out string path))
             {
                 BakeAnythingCore.ExportToEXR(target, path, target.BakeOptions);

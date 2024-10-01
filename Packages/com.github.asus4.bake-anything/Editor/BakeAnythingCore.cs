@@ -21,7 +21,7 @@ namespace BakeAnything
         /// <param name="options">Options</param>
         /// <returns>The Baked Texture</returns>
         public static Texture2D BakeToTexture(
-            IBakable bakable,
+            IBakeable bakable,
             Texture2D texture = null,
             BakeOptions options = null)
         {
@@ -60,7 +60,7 @@ namespace BakeAnything
         /// <param name="options">Options</param>
         /// <returns>The Baked Texture</returns>
         public static Texture2D BakeToAsset(
-            IBakable bakable,
+            IBakeable bakable,
             string path,
             BakeOptions options = null)
         {
@@ -101,7 +101,7 @@ namespace BakeAnything
         /// <param name="path">An export path</param>
         /// <param name="options">Options</param>
         public static void ExportToEXR(
-            IBakable bakable,
+            IBakeable bakable,
             string path,
             BakeOptions options = null)
         {

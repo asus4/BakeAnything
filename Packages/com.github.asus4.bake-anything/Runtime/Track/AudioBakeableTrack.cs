@@ -11,10 +11,10 @@ namespace BakeAnything
     /// Bakes analyzed audio data
     /// </summary>
     [CreateAssetMenu(
-        fileName = "AudioBakableTrack",
-        menuName = "ScriptableObject/Bake Anything/Audio Bakable Track"
+        fileName = "AudioBakeableTrack",
+        menuName = "ScriptableObject/Bake Anything/Audio Track"
     )]
-    public sealed class AudioBakableTrack : BakableTrack
+    public sealed class AudioBakeableTrack : BakeableTrack
     {
         public enum Mode
         {

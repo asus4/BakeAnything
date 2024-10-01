@@ -12,6 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2fb5a8ac22fdb45558486c4b3f13cc29, type: 3}
   m_Name: AudioBakeTrack
   m_EditorClassIdentifier: 
+  bakeOptions:
+    <Format>k__BackingField: 17
+    <WrapMode>k__BackingField: 0
+    <FilterMode>k__BackingField: 0
   <Fps>k__BackingField: 60
   <MaxWidth>k__BackingField: 8192
   clip: {fileID: 8300000, guid: 71492898c9a2c4bfa9a86f370d8dcd93, type: 3}

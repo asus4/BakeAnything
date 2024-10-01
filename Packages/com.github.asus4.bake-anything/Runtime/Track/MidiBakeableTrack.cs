@@ -3,8 +3,10 @@ using UnityEngine;
 
 namespace BakeAnything
 {
-    [CreateAssetMenu(fileName = "MidiBakableTrack", menuName = "ScriptableObject/Bake Anything/Midi Bakable Track")]
-    public class MidiBakableTrack : BakableTrack
+    [CreateAssetMenu(
+        fileName = "MidiBakeableTrack",
+        menuName = "ScriptableObject/Bake Anything/Midi Track")]
+    public class MidiBakeableTrack : BakeableTrack
     {
         [SerializeField]
         private TextAsset midiFile;

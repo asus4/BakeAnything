@@ -6,15 +6,15 @@ namespace BakeAnything
     /// <summary>
     /// Core interface that can be baked into a texture.
     /// </summary>
-    public interface IBakable
+    public interface IBakeable
     {
         /// <summary>
-        /// The width of the texture
+        /// The width of the baked texture
         /// </summary>
         int Width { get; }
 
         /// <summary>
-        /// The height of the texture
+        /// The height of the baked texture
         /// </summary>
         int Height { get; }
 
