@@ -39,7 +39,7 @@ namespace BakeAnything
             _ => throw new NotImplementedException(),
         };
 
-        protected override void BakeChannel(Span<float> buffer, int channel)
+        internal override void BakeChannel(Span<float> buffer, int channel)
         {
             var samples = new float[clip.samples];
             clip.GetMonoData(samples);

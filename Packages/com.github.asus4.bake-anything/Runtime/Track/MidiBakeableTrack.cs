@@ -14,7 +14,7 @@ namespace BakeAnything
         public override int Frames => 0;
         public override int Channels => 0;
 
-        protected override void BakeChannel(Span<float> buffer, int channel)
+        internal override void BakeChannel(Span<float> buffer, int channel)
         {
             throw new NotImplementedException();
         }

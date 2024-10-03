@@ -81,7 +81,7 @@ namespace BakeAnything
             return PixelBuffer;
         }
 
-        protected abstract void BakeChannel(Span<float> buffer, int channel);
+        internal abstract void BakeChannel(Span<float> buffer, int channel);
 
         static unsafe void CopyBufferToChannel(Span<float> buffer, Span<Color> pixelBuffer, int width, int channel)
         {

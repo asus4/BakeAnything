@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace BakeAnything
 {
+    /// <summary>
+    /// Composite of multiple bakable tracks.
+    /// </summary>
     [CreateAssetMenu(
         fileName = "MultiBakableTrack",
         menuName = "ScriptableObject/Bake Anything/Multi Bakable Track"
@@ -25,9 +28,20 @@ namespace BakeAnything
                 track.MaxWidth = MaxWidth;
             }
         }
-        protected override void BakeChannel(Span<float> buffer, int channel)
+
+        internal override void BakeChannel(Span<float> buffer, int channel)
         {
-            throw new NotImplementedException();
+            int offset = 0;
+            foreach (var track in Tracks)
+            {
+                var count = track.Channels;
+                if (channel < offset + count)
+                {
+                    track.BakeChannel(buffer, channel - offset);
+                    return;
+                }
+                offset += count;
+            }
         }
     }
 }
